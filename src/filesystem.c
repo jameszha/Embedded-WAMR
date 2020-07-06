@@ -15,6 +15,7 @@
 
 FS_LITTLEFS_DECLARE_DEFAULT_CONFIG(storage);
 
+/** @brief  Filesystem Configuration */
 static struct fs_mount_t lfs_storage_mnt = {
 	.type = FS_LITTLEFS,
 	.fs_data = &storage,
@@ -23,7 +24,7 @@ static struct fs_mount_t lfs_storage_mnt = {
 };
 
 /**
- * @brief Initializes Bluetooth and enables UART interrupts
+ * @brief Initializes LittleFS filesystem
  */
 int filesystem_init(void)
 {
@@ -33,6 +34,7 @@ int filesystem_init(void)
 	const struct flash_area *pfa;
 	int rc;
 
+	// Check if the flash area can be found and opened
 	rc = flash_area_open(id, &pfa);
 	if (rc < 0) {
 		printk("FAIL: unable to find flash area %u: %d\n",
@@ -40,7 +42,7 @@ int filesystem_init(void)
 		return -1;
 	}
 
-	/* Optional wipe flash contents */
+	// Optional wipe flash contents
 	if (IS_ENABLED(CONFIG_APP_WIPE_STORAGE)) {
 		printk("Erasing flash area ... ");
 		rc = flash_area_erase(pfa, 0, pfa->fa_size);
@@ -49,7 +51,7 @@ int filesystem_init(void)
 
 	flash_area_close(pfa);
 
-
+	// Mount the filesystem
 	rc = fs_mount(mp);
 	if (rc < 0) {
 		printk("FAIL: mount id %u at %s: %d\n",
@@ -58,6 +60,7 @@ int filesystem_init(void)
 		return -1;
 	}
 
+	// Check block size, num blocks, and num free blocks
 	rc = fs_statvfs(mp->mnt_point, &sbuf);
 	if (rc < 0) {
 		printk("FAIL: statvfs: %d\n", rc);
@@ -74,6 +77,9 @@ int filesystem_init(void)
 	return 0;
 }
 
+/**
+ * @brief Takes down LittleFS filesystem
+ */
 int filesystem_destroy(void)
 {
 	struct fs_mount_t *mp = &lfs_storage_mnt;
